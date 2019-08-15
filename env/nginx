@@ -1,0 +1,3 @@
+NGINX_CONFIG=developer.conf
+NGINX_HOST=magento2.local
+NGINX_DOCROOT=/var/www/magento2

@@ -1,0 +1,78 @@
+version: '3.4'
+services:
+  nginx:
+    container_name: %project_name%_nginx
+    image: nginx:latest
+    ports:
+    - "80:80"
+    volumes:
+    - ./build/nginx/developer.conf:/etc/nginx/conf.d/default.conf:ro
+    - %project_name%_magento:/var/www/magento2:ro
+    - ../app/code:/var/www/magento2/app/code:ro
+    - ../app/design:/var/www/magento2/app/design:ro
+    links:
+    - php
+    env_file:
+    - env/nginx
+  php:
+    container_name: %project_name%_php
+    build:
+      context: .
+      dockerfile: build/php/Dockerfile
+    volumes:
+    - %project_name%_magento:/var/www/magento2:rw
+    - ../app/code:/var/www/magento2/app/code:rw
+    - ../app/design:/var/www/magento2/app/design:rw
+#    - ../app/etc/config.php:/var/www/magento2/app/etc/config.php:rw
+#    - ../build.js:/var/www/magento2/build.js:rw
+    entrypoint: /docker-entrypoint.sh
+    command: sudo bash -c "/usr/sbin/sshd && /usr/local/sbin/php-fpm"
+    ports:
+    - "2222:22"
+    links:
+    - mysql
+    - redis
+    - rabbitmq
+    env_file:
+    - env/php
+    - env/nginx
+    - env/mysql
+    - env/redis
+    - env/magento
+    - env/rabbitmq
+  mysql:
+    container_name: %project_name%_mysql
+    image: mysql:5.7
+    volumes:
+    - %project_name%_db-data:/var/lib/mysql:rw
+    ports:
+    - "3306:3306"
+    env_file:
+    - env/mysql
+  redis:
+    container_name: %project_name%_redis
+    image: redis:latest
+    env_file:
+    - env/redis
+  rabbitmq:
+    container_name: %project_name%_rabbitmq
+    image: rabbitmq:3.7.8-management
+    ports:
+    - "15672:15672"
+    env_file:
+    - env/rabbitmq
+  adminer:
+    container_name: %project_name%_adminer
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+    - "8080:80"
+    links:
+    - mysql
+volumes:
+  %project_name%_db-data:
+    driver: local
+  %project_name%_magento:
+    driver: local

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="http://schema.phpunit.de/6.2/phpunit.xsd"
+         colors="true"
+         beStrictAboutTestsThatDoNotTestAnything="false"
+         bootstrap="./framework/bootstrap.php"
+        >
+    <testsuite name="Project Unit Tests">
+        <directory suffix="Test.php">../../../app/code/Vendor/*/Test/Unit</directory>
+    </testsuite>
+    <php>
+        <ini name="date.timezone" value="America/Los_Angeles"/>
+        <ini name="xdebug.max_nesting_level" value="200"/>
+    </php>
+    <filter>
+        <whitelist addUncoveredFilesFromWhiteList="true">
+            <directory suffix=".php">../../../app/code/*/*/*</directory>
+                  <exclude>
+                      <directory>../../../app/code/*/*/Test</directory>
+                      <directory>../../../app/code/*/*/Test/Unit</directory>
+                      <directory>../../../lib/internal/*/*/Test</directory>
+                      <directory>../../../lib/internal/*/*/*/Test</directory>
+                      <directory>../../../setup/src/*/*/Test</directory>
+                      <directory>../../../app/code/*/*/Setup</directory>
+                      <directory>../../../app/code/*/*/lib</directory>
+                      <directory>../../../app/code/*/*/Controller/Adminhtml</directory>
+                      <directory suffix="registration.php">../../../app/code/Vendor/*</directory>
+                  </exclude>
+        </whitelist>
+    </filter>
+    <listeners>
+        <listener class="Magento\Framework\TestFramework\Unit\Listener\ReplaceObjectManager"/>
+    </listeners>
+</phpunit>
