@@ -1,17 +1,18 @@
-ARG PHP_VERSION=7.3-fpm-stretch
+ARG PHP_VERSION=7.2-fpm-stretch
 
 FROM php:${PHP_VERSION}
-LABEL description="Magento EE 2.3.2 docker instance build."
+LABEL description="Magento CE 2.3.1 docker instance build."
 
-ENV MAGENTO_VERSION 2.3.2
+ENV MAGENTO_VERSION 2.3.1
 ENV INSTALL_DIR /var/www/magento2
+ENV COMPOSER_HOME /var/www/.composer
 ENV SSH_USER root
 ENV SSH_PASSWORD root
 
 RUN echo "deb http://deb.debian.org/debian stretch-backports main" >> /etc/apt/sources.list
 RUN apt-get update && apt-get -t stretch-backports install -y libsodium-dev
 
-RUN requirements="libcurl3-dev libfreetype6 libjpeg62-turbo libjpeg62-turbo-dev libpng-dev libfreetype6-dev libicu-dev libxslt1-dev" \
+RUN requirements="libcurl3-dev libfreetype6 libjpeg62-turbo libjpeg62-turbo-dev libpng-dev libfreetype6-dev libicu-dev libxslt1-dev libzip-dev" \
     && apt-get update \
     && apt-get install -y $requirements \
     && rm -rf /var/lib/apt/lists/* \
@@ -20,6 +21,7 @@ RUN requirements="libcurl3-dev libfreetype6 libjpeg62-turbo libjpeg62-turbo-dev 
     && docker-php-ext-configure gd --with-freetype-dir=/usr/include/ --with-jpeg-dir=/usr/include/ \
     && docker-php-ext-install gd \
     && docker-php-ext-install mbstring \
+    && docker-php-ext-configure zip --with-libzip \
     && docker-php-ext-install zip \
     && docker-php-ext-install intl \
     && docker-php-ext-install xsl \
@@ -68,16 +70,14 @@ RUN chmod +x /docker-entrypoint.sh
 
 RUN cd /usr/local/bin && curl -sS -O https://files.magerun.net/n98-magerun2.phar
 RUN curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
-RUN mkdir -p /var/www/.composer && chown www-data:www-data /var/www/.composer \
+RUN mkdir -p ${COMPOSER_HOME} && chown www-data:www-data ${COMPOSER_HOME} \
     && mkdir -p /var/www/.npm && chown www-data:www-data /var/www/.npm
 
 RUN mkdir -p ${INSTALL_DIR} && chown www-data:www-data ${INSTALL_DIR}
 COPY config/cron/crontab /etc/cron.d/crontab
+COPY build/php/auth.json ${COMPOSER_HOME}/auth.json
+COPY build/php/auth.json /root/.composer/auth.json
 
 WORKDIR ${INSTALL_DIR}
 
 USER www-data
-
-COPY --chown=www-data:www-data build/php/magento2 ${INSTALL_DIR}
-
-RUN chmod +x ${INSTALL_DIR}/bin/magento ${INSTALL_DIR}/vendor/phpunit/phpunit/phpunit ${INSTALL_DIR}/vendor/squizlabs/php_codesniffer/bin/phpcs ${INSTALL_DIR}/vendor/phpmd/phpmd/src/bin/phpmd && chmod 777 var/ generated/ pub/media/ pub/static/ app/etc/

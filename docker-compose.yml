@@ -21,10 +21,6 @@ services:
       dockerfile: build/php/Dockerfile
     volumes:
     - %project_name%_magento:/var/www/magento2:rw
-    - ../app/code:/var/www/magento2/app/code:rw
-    - ../app/design:/var/www/magento2/app/design:rw
-#    - ../app/etc/config.php:/var/www/magento2/app/etc/config.php:rw
-#    - ../build.js:/var/www/magento2/build.js:rw
     entrypoint: /docker-entrypoint.sh
     command: sudo bash -c "/usr/sbin/sshd && /usr/local/sbin/php-fpm"
     ports:
@@ -76,3 +72,7 @@ volumes:
     driver: local
   %project_name%_magento:
     driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: %project_global_path%

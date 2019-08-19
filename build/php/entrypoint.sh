@@ -1,10 +1,21 @@
 #!/usr/bin/env bash
 set -e
 
+INSTALL_DIR="/var/www/magento2"
+
 if [[ -f /var/www/magento2/app/etc/config.php ]]; then
     echo "Change owner for config.php"
     sudo chown www-data:www-data /var/www/magento2/app/etc/config.php
 fi
+
+echo "Set permissions"
+sudo chown -R :www-data ${INSTALL_DIR}
+sudo chmod -R g+w ${INSTALL_DIR}/var ${INSTALL_DIR}/generated ${INSTALL_DIR}/pub ${INSTALL_DIR}/vendor ${INSTALL_DIR}/app/etc
+
+echo "Instal packages"
+sudo composer install
+sudo chmod +x ${INSTALL_DIR}/bin/magento ${INSTALL_DIR}/vendor/phpunit/phpunit/phpunit ${INSTALL_DIR}/vendor/squizlabs/php_codesniffer/bin/phpcs ${INSTALL_DIR}/vendor/phpmd/phpmd/src/bin/phpmd
+sudo chown -R :www-data ${INSTALL_DIR}
 
 if [[ ! -f /var/www/magento2/app/etc/env.php ]]; then
 	# wait some time to make sure mysql server is up & running
@@ -13,12 +24,6 @@ if [[ ! -f /var/www/magento2/app/etc/env.php ]]; then
 	echo "Create databases"
     mysql -u${MYSQL_USER} -p"${MYSQL_ROOT_PASSWORD}" -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE_MAIN} CHARACTER SET UTF8; \
     GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE_MAIN}.* TO '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
-
-    mysql -u${MYSQL_USER} -p"${MYSQL_ROOT_PASSWORD}" -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE_QUOTE} CHARACTER SET UTF8; \
-    GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE_QUOTE}.* TO '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
-
-    mysql -u${MYSQL_USER} -p"${MYSQL_ROOT_PASSWORD}" -h ${MYSQL_HOST} -e "CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE_SALES} CHARACTER SET UTF8; \
-    GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE_SALES}.* TO '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';"
 
     echo "Install magento"
 	php /var/www/magento2/bin/magento setup:install \
@@ -68,12 +73,6 @@ if [[ ! -f /var/www/magento2/app/etc/env.php ]]; then
 	  --amqp-port=$RABBITMQ_PORT \
 	  --amqp-user=$RABBITMQ_DEFAULT_USER \
 	  --amqp-password=$RABBITMQ_DEFAULT_PASS
-
-	echo "Split database...Create quote.* tables"
-    php /var/www/magento2/bin/magento setup:db-schema:split-quote --host=$MYSQL_HOST --dbname=$MYSQL_DATABASE_QUOTE --username=$MYSQL_USER --password=$MYSQL_ROOT_PASSWORD
-
-    echo "Split database...Create sales.* tables"
-    php /var/www/magento2/bin/magento setup:db-schema:split-sales --host=$MYSQL_HOST --dbname=$MYSQL_DATABASE_SALES --username=$MYSQL_USER --password=$MYSQL_ROOT_PASSWORD
 
 	echo "Upgrade..."
     php /var/www/magento2/bin/magento setup:upgrade
